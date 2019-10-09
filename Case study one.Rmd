@@ -3,6 +3,8 @@ title: "Case Study one"
 author: "Dusin Bracy and Tazeb Abera"
 date: "10/8/2019"
 output: html_document
+editor_options: 
+  chunk_output_type: inline
 ---
 
 # Case study 1(Case Study of US Craft Beer and Breweries)
@@ -32,12 +34,16 @@ library(tidyr)
 library(ggthemes) # for themes in ggplot
 library(knitr)
 library(kableExtra) # library to make the document more presentable
+library(tidyverse) # auto includes ggplot2, readr, deplyr,tidyr, plus handy stuff like stringr
+# tidyverse_packages(include_self = TRUE) #shows all packages in tidyverse
+
 ```
 
 ```{r}
 # Read in beer and breweries data set using _csv for more tidy output
-Beers <- read_csv('Beers.csv', col_types = cols())
-Breweries <- read_csv('Breweries.csv', col_types = cols())
+Beers <- read_csv('./data/Beers.csv', col_types = cols())
+Breweries <- read_csv('./data/Breweries.csv', col_types = cols())
+
 ```
 
 The field `Brewery_id` in `Beers.csv` and `Brew_ID` in `Breweries.csv` are the same data, but do not share a name. We remedy this by renaming the column in `Beers.csv`.
@@ -54,19 +60,17 @@ BrewPerState
 ```
 
 
-```{r}
-# Renamed Brewery_id to Brew_ID to satisfy merging requirement
-Beers <- rename(Beers, Brew_ID = Brewery_id)
-```
 ### 2. Merge beer data with the breweries data. Print the first 6 observations and the last six observations to check the merged file.
 
  We can now merge them into a single dataset, using `full_join`.
  
 ```{r}
-Brewdata <- full_join(Beers, Breweries, by="Brew_ID")
-```
+# Rename Brewery_id to Brew_ID to satisfy merging requirement
+Beers <- rename(Beers, Brew_ID = Brewery_id)
 
-```{r}
+# Merge tables
+Brewdata <- full_join(Beers, Breweries, by="Brew_ID")
+
 # Change variable names to more meaningful title
 Brewdata <- rename(Brewdata, Beer = Name.x, Brewery = Name.y, OZ = Ounces)
 ```
@@ -75,8 +79,63 @@ To retrieve the first and last six observations from the combined data,
 we run `head` and `tail` on `Brewdata`, our combined dataset.
 ```{r}
 kable(Brewdata %>% head())
+kable(Brewdata %>% tail())
 ```
 
+
+### 3. Address the missing values in each column.
+
 ```{r}
-kable(Brewdata %>% tail())
+sum(is.na(Brewdata))
+summary(Brewdata)
+# Need to handle NA in both ABV and IBU
+
+
+
+```
+
+
+### 4. Compute the median alcohol content and international bitterness unit for each state. Plot a bar chart to compare.
+
+```{r}
+
+
+```
+
+### 5. Which state has the maximum alcoholic (ABV) beer? Which state has the most bitter (IBU) beer?
+
+```{r}
+
+
+```
+
+### 6. Comment on the summary statistics and distribution of the ABV variable.
+
+```{r}
+
+
+```
+
+
+### 7. Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
+
+```{r}
+
+
+```
+
+
+### 8. Budweiser would also like to investigate the difference with respect to IBU and ABV between IPAs (India Pale Ales) and other types of Ale (any beer with “Ale” in its name other than IPA).  You decide to use KNN clustering to investigate this relationship.  Provide statistical evidence one way or the other. You can of course assume your audience is comfortable with percentages … KNN is very easy to understand.  
+
+```{r}
+
+
+```
+
+
+### 9. Knock their socks off!  Find one other useful inference from the data that you feel Budweiser may be able to find value in.  You must convince them why it is important and back up your conviction with appropriate statistical evidence. 
+
+```{r}
+
+
 ```
