@@ -1,0 +1,82 @@
+---
+title: "Case Study one"
+author: "Dusin Bracy and Tazeb Abera"
+date: "10/8/2019"
+output: html_document
+---
+
+# Case study 1(Case Study of US Craft Beer and Breweries)
+
+## Introduction and Overview
+
+ 
+-------
+
+### Repository Structure
+
+### Reproduction of Analysis
+
+## Analysis
+
+We begin by setting `knitr` options, 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
+```
+
+
+```{r , include=FALSE}
+library(ggplot2) # Data visualization
+library(readr) # CSV file I/O, e.g. the read_csv function
+library(dplyr) # Heavy use of this library
+library(tidyr)
+library(ggthemes) # for themes in ggplot
+library(knitr)
+library(kableExtra) # library to make the document more presentable
+```
+
+```{r}
+# Read in beer and breweries data set using _csv for more tidy output
+Beers <- read_csv('Beers.csv', col_types = cols())
+Breweries <- read_csv('Breweries.csv', col_types = cols())
+```
+
+The field `Brewery_id` in `Beers.csv` and `Brew_ID` in `Breweries.csv` are the same data, but do not share a name. We remedy this by renaming the column in `Beers.csv`.
+
+## Research Questions
+
+
+### 1. How many breweries are present in each state?
+
+We answer this question by retrieving the value of `State` from the `Breweries` data.
+```{r}
+BrewPerState <-table(Breweries$State)
+BrewPerState
+```
+
+
+```{r}
+# Renamed Brewery_id to Brew_ID to satisfy merging requirement
+Beers <- rename(Beers, Brew_ID = Brewery_id)
+```
+### 2. Merge beer data with the breweries data. Print the first 6 observations and the last six observations to check the merged file.
+
+ We can now merge them into a single dataset, using `full_join`.
+ 
+```{r}
+Brewdata <- full_join(Beers, Breweries, by="Brew_ID")
+```
+
+```{r}
+# Change variable names to more meaningful title
+Brewdata <- rename(Brewdata, Beer = Name.x, Brewery = Name.y, OZ = Ounces)
+```
+
+To retrieve the first and last six observations from the combined data, 
+we run `head` and `tail` on `Brewdata`, our combined dataset.
+```{r}
+kable(Brewdata %>% head())
+```
+
+```{r}
+kable(Brewdata %>% tail())
+```
