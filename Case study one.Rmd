@@ -88,9 +88,18 @@ kable(Brewdata %>% tail())
 ```{r}
 sum(is.na(Brewdata))
 summary(Brewdata)
-# Need to handle NA in both ABV and IBU
+# Need to handle NA in ABV, IBU, Sytle
+Brewdata$OZ = as.factor(Brewdata$OZ)
 
+library(mice)
+imp <- mice(Brewdata, seed=5)
+BrewComplete <- mice::complete(imp)
+sum(is.na(BrewComplete))
+summary(BrewComplete)
 
+sum(is.na(BrewComplete$Style))
+
+Brewdata %>% filter(is.na(Style))
 
 ```
 
