@@ -4,7 +4,7 @@ author: "Dusin Bracy and Tazeb Abera"
 date: "10/8/2019"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 # Case study 1(Case Study of US Craft Beer and Breweries)
@@ -27,15 +27,10 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 
 
 ```{r , include=FALSE}
-library(ggplot2) # Data visualization
-library(readr) # CSV file I/O, e.g. the read_csv function
-library(dplyr) # Heavy use of this library
-library(tidyr)
+library(tidyverse) # auto includes ggplot2, readr, deplyr,tidyr etc
 library(ggthemes) # for themes in ggplot
-library(knitr)
 library(kableExtra) # library to make the document more presentable
-library(tidyverse) # auto includes ggplot2, readr, deplyr,tidyr, plus handy stuff like stringr
-# tidyverse_packages(include_self = TRUE) #shows all packages in tidyverse
+library(mice) # optional to impute ABV & IBU values
 
 ```
 
@@ -73,11 +68,18 @@ Brewdata <- full_join(Beers, Breweries, by="Brew_ID")
 
 # Change variable names to more meaningful title
 Brewdata <- rename(Brewdata, Beer = Name.x, Brewery = Name.y, OZ = Ounces)
+
+#Convert OZ to factor
+Brewdata$OZ = as.factor(Brewdata$OZ)
 ```
 
 To retrieve the first and last six observations from the combined data, 
 we run `head` and `tail` on `Brewdata`, our combined dataset.
 ```{r}
+# quick:
+head(Brewdata)
+tail(Brewdata)
+# pretty:
 kable(Brewdata %>% head())
 kable(Brewdata %>% tail())
 ```
@@ -85,21 +87,24 @@ kable(Brewdata %>% tail())
 
 ### 3. Address the missing values in each column.
 
+-Impute missing ABV and IBU values into BrewComplete (so we can compare vs Brewdata)
+-Remove missing styles, 3 of these also have missing ABV and IBU values also. The ABV/IBU of the non-missings values aren't remarkable, so their removal shouldn't affect the overall data, but it's worth noting.
+
 ```{r}
 sum(is.na(Brewdata))
 summary(Brewdata)
+Brewdata %>% filter(is.na(Style))
 # Need to handle NA in ABV, IBU, Sytle
-Brewdata$OZ = as.factor(Brewdata$OZ)
 
-library(mice)
+# impute missing ABV & IBU values:
 imp <- mice(Brewdata, seed=5)
 BrewComplete <- mice::complete(imp)
 sum(is.na(BrewComplete))
 summary(BrewComplete)
-
-sum(is.na(BrewComplete$Style))
-
 Brewdata %>% filter(is.na(Style))
+
+# remove the 5 beers missing style (3 of them were missing ABV/IBU also)
+BrewComplete <- BrewComplete %>% filter(!is.na(Style))
 
 ```
 
@@ -108,28 +113,51 @@ Brewdata %>% filter(is.na(Style))
 
 ```{r}
 
+Brewdata %>% filter(!is.na(IBU & ABV)) %>% select(State, ABV,IBU) %>%
+  group_by(State) %>%
+  dplyr::summarize(Median_IBU=median(IBU), Median_ABV=median(ABV*100)) %>%
+  gather(`Median_IBU`, `Median_ABV`, key='Type', value='Measurement') %>%
+  ggplot(aes(State, Measurement, fill=Type)) +
+  geom_bar(stat='identity', position = 'Dodge') +
+  labs(y='ABV% and IBU', title = 'Median ABV and IBU by State')
 
 ```
 
 ### 5. Which state has the maximum alcoholic (ABV) beer? Which state has the most bitter (IBU) beer?
 
 ```{r}
+TopABV <- top_n(Brewdata, 1, ABV)
+TopIBU <- top_n(Brewdata, 1, IBU)
 
-
+TopABV$State
+TopIBU$State
 ```
 
 ### 6. Comment on the summary statistics and distribution of the ABV variable.
 
-```{r}
+ABV of all measured beer falls into a range of .1% to 12.8% alcohol content by volume.  The data appears to be fairly normally distributed with a touch of right skewness, with a mean of 5.97%, a median of 5.60%, a standard deviation of 1.35% and an interquartile range of 1.7%.
 
+```{r}
+summary(BrewComplete$ABV)
+sd(BrewComplete$ABV)
+hist(BrewComplete$ABV)
+
+# note the slight variation of the mean in BrewComplete vs original Brewdata
+summary(Brewdata$ABV)
+sd(Brewdata$ABV)
+hist(Brewdata$ABV)
 
 ```
 
 
 ### 7. Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
 
-```{r}
 
+It appears that there is some correlation between bitterness and ABV. The data shows a trend that generally as bitterness increases, so does alcohol content.  However, alcohol content may increase with or without an increase in bitterness.
+
+Several of the highly bitter beers have considerablly more alcohol in them than thier less bitter counterparts.
+```{r}
+BrewComplete %>% ggplot(aes(ABV, IBU)) + geom_jitter()
 
 ```
 
