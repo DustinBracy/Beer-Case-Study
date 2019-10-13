@@ -31,7 +31,8 @@ library(tidyverse) # auto includes ggplot2, readr, deplyr,tidyr etc
 library(ggthemes) # for themes in ggplot
 library(kableExtra) # library to make the document more presentable
 library(mice) # optional to impute ABV & IBU values
-
+library(class)
+library(caret)
 ```
 
 ```{r}
@@ -87,24 +88,42 @@ kable(Brewdata %>% tail())
 
 ### 3. Address the missing values in each column.
 
--Impute missing ABV and IBU values into BrewComplete (so we can compare vs Brewdata)
--Remove missing styles, 3 of these also have missing ABV and IBU values also. The ABV/IBU of the non-missings values aren't remarkable, so their removal shouldn't affect the overall data, but it's worth noting.
+-Remove 5 missing styles, 3/5 of these also have missing ABV and IBU values also. The ABV/IBU of the non-missings values aren't remarkable, so their removal shouldn't affect the overall data, but it's worth noting.
+-Impute 62 missing ABV and 1005 missing IBU values into BrewComplete (so we can compare vs Brewdata)
+-Based on visual inspection, it appears ABV is safe to impute, but IBU looks like it might be overreaching! (e.g. Cider Beer IBUs have no reference data for comparison)
+-We will exclude missing IBU beer data for comparisons on IBU in future tests
+
 
 ```{r}
+# Explore missing values:
 sum(is.na(Brewdata))
 summary(Brewdata)
 Brewdata %>% filter(is.na(Style))
 # Need to handle NA in ABV, IBU, Sytle
+
+# remove the 5 beers missing style (3 of them were missing ABV/IBU also)
+RemovedBrews <- Brewdata %>% filter(is.na(Style))
+Brewdata <- Brewdata %>% filter(!is.na(Style))
+
+# identify missing IBU/ABV values:
+Brewdata$ImputedABV <- ifelse(is.na(Brewdata$ABV),'Imputed','Original')
+Brewdata$ImputedIBU <- ifelse(is.na(Brewdata$IBU),'Imputed','Original')
 
 # impute missing ABV & IBU values:
 imp <- mice(Brewdata, seed=5)
 BrewComplete <- mice::complete(imp)
 sum(is.na(BrewComplete))
 summary(BrewComplete)
-Brewdata %>% filter(is.na(Style))
 
-# remove the 5 beers missing style (3 of them were missing ABV/IBU also)
-BrewComplete <- BrewComplete %>% filter(!is.na(Style))
+# view imputed vs original plot comparison:
+BrewComplete %>% ggplot(aes(Style, ABV, color=ImputedABV)) + geom_point() + coord_flip()
+BrewComplete %>% ggplot(aes(Style, IBU, color=ImputedIBU)) + geom_point() + coord_flip()
+
+# assign imputed ABV values
+Brewdata$ABV <- BrewComplete$ABV
+
+# store IBU containing dataset for further examination 
+IBUdata <- Brewdata %>% filter(!is.na(IBU))
 
 ```
 
@@ -138,11 +157,6 @@ TopIBU$State
 ABV of all measured beer falls into a range of .1% to 12.8% alcohol content by volume.  The data appears to be fairly normally distributed with a touch of right skewness, with a mean of 5.97%, a median of 5.60%, a standard deviation of 1.35% and an interquartile range of 1.7%.
 
 ```{r}
-summary(BrewComplete$ABV)
-sd(BrewComplete$ABV)
-hist(BrewComplete$ABV)
-
-# note the slight variation of the mean in BrewComplete vs original Brewdata
 summary(Brewdata$ABV)
 sd(Brewdata$ABV)
 hist(Brewdata$ABV)
@@ -155,9 +169,9 @@ hist(Brewdata$ABV)
 
 It appears that there is some correlation between bitterness and ABV. The data shows a trend that generally as bitterness increases, so does alcohol content.  However, alcohol content may increase with or without an increase in bitterness.
 
-Several of the highly bitter beers have considerablly more alcohol in them than thier less bitter counterparts.
+Several of the highly bitter beers have considerably more alcohol in them than thier less bitter counterparts.
 ```{r}
-BrewComplete %>% ggplot(aes(ABV, IBU)) + geom_jitter()
+IBUdata %>% ggplot(aes(ABV, IBU)) + geom_jitter()
 
 ```
 
@@ -165,6 +179,51 @@ BrewComplete %>% ggplot(aes(ABV, IBU)) + geom_jitter()
 ### 8. Budweiser would also like to investigate the difference with respect to IBU and ABV between IPAs (India Pale Ales) and other types of Ale (any beer with “Ale” in its name other than IPA).  You decide to use KNN clustering to investigate this relationship.  Provide statistical evidence one way or the other. You can of course assume your audience is comfortable with percentages … KNN is very easy to understand.  
 
 ```{r}
+# Setup the data:
+nonIPA <- cbind(IBUdata, type='nonIPA', stringsAsFactors=F) %>% filter(
+  (grepl('\\bale\\b', Style, ignore.case=T) | grepl('\\bale\\b', Beer, ignore.case=T)) & 
+    (!grepl('\\bIPA\\b', Style, ignore.case=T) & !grepl('\\bIPA\\b', Beer, ignore.case=T)))
+
+IPA <- cbind(IBUdata, type='IPA', stringsAsFactors=F) %>% filter(grepl('\\bIPA\\b', Style, ignore.case=T) | grepl('\\bIPA\\b', Beer, ignore.case=T))
+
+# Make sure no non-IPAs are also classified as an IPA:
+intersect(nonIPA, IPA)
+
+# Combine the IPA/nonIPA dataframes:
+Ales <- union(nonIPA, IPA)
+Ales$type <- as.factor(Ales$type)
+
+
+# Build & tune KNN model:
+set.seed(135)
+splitPerc = .7
+iterations = 250
+numks = 50 # diminishing returns after 30
+masterAcc = matrix(nrow = iterations, ncol = numks)
+  
+for(j in 1:iterations) {
+  accs = data.frame(accuracy = numeric(numks), k = numeric(numks))
+  trainIndices = sample(1:dim(Ales)[1],round(splitPerc * dim(Ales)[1]))
+  train = Ales[trainIndices,]
+  test = Ales[-trainIndices,]
+  for(i in 1:numks) {
+      classifications = knn(train[,c('IBU','ABV')],test[,c('IBU','ABV')],as.factor(train$type), prob = TRUE, k = i)
+      table(as.factor(test$type),classifications)
+      CM = confusionMatrix(table(as.factor(test$type),classifications))
+      masterAcc[j,i] = CM$overall[1]
+  }
+}
+
+MeanAcc = colMeans(masterAcc)
+plot(seq(1,numks,1),MeanAcc, type = "l")
+bestK <- which.max(MeanAcc)
+paste0("bestK: ",bestK,", Avg Accuracy: ",max(MeanAcc))
+# KNN = 5 is best w/ meanAcc = .866
+
+# Use KNN to predict Ale Type (nonIPA/IPA)
+classifications = knn(train[,c('IBU','ABV')],test[,c('IBU','ABV')],train$type, prob = TRUE, k = bestK)
+table(test$type,classifications)
+confusionMatrix(table(test$type,classifications))
 
 
 ```
