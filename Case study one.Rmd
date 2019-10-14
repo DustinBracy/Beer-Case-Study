@@ -152,6 +152,13 @@ TopABV$State
 TopIBU$State
 ```
 
+```{r}
+kable(Brewdata[which.max(Brewdata$ABV),])
+```
+
+```{r}
+kable(Brewdata[which.max(Brewdata$IBU),])
+
 ### 6. Comment on the summary statistics and distribution of the ABV variable.
 
 ABV of all measured beer falls into a range of .1% to 12.8% alcohol content by volume.  The data appears to be fairly normally distributed with a touch of right skewness, with a mean of 5.97%, a median of 5.60%, a standard deviation of 1.35% and an interquartile range of 1.7%.
@@ -163,6 +170,15 @@ hist(Brewdata$ABV)
 
 ```
 
+```{r}
+BeerSummary <- (summary(Brewdata$ABV))
+print(BeerSummary)
+
+
+hist(Brewdata$ABV)
+```
+
+
 
 ### 7. Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
 
@@ -172,6 +188,10 @@ It appears that there is some correlation between bitterness and ABV. The data s
 Several of the highly bitter beers have considerably more alcohol in them than thier less bitter counterparts.
 ```{r}
 IBUdata %>% ggplot(aes(ABV, IBU)) + geom_jitter()
+
+
+ggplot(Brewdata, aes(x=IBU, y= ABV)) + geom_point(shape=1) + geom_smooth(method=lm) + theme_economist() + 
+  scale_color_economist()+ theme(axis.text.x=element_text(size=rel(1.0)))+ ggtitle("Correlation between IBU and ABV ") + labs(x="IBU",y="ABV")
 
 ```
 
