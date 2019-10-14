@@ -3,6 +3,8 @@ title: "Case Study one"
 author: "Dusin Bracy and Tazeb Abera"
 date: "10/8/2019"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 # Case study 1(Case Study of US Craft Beer and Breweries)
@@ -25,19 +27,19 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 
 
 ```{r , include=FALSE}
-library(ggplot2) # Data visualization
-library(readr) # CSV file I/O, e.g. the read_csv function
-library(dplyr) # Heavy use of this library
-library(tidyr)
+library(tidyverse) # auto includes ggplot2, readr, deplyr,tidyr etc
 library(ggthemes) # for themes in ggplot
-library(knitr)
 library(kableExtra) # library to make the document more presentable
+library(mice) # optional to impute ABV & IBU values
+library(class)
+library(caret)
 ```
 
 ```{r}
 # Read in beer and breweries data set using _csv for more tidy output
-Beers <- read_csv('Beers.csv', col_types = cols())
-Breweries <- read_csv('Breweries.csv', col_types = cols())
+Beers <- read_csv('./data/Beers.csv', col_types = cols())
+Breweries <- read_csv('./data/Breweries.csv', col_types = cols())
+
 ```
 
 The field `Brewery_id` in `Beers.csv` and `Brew_ID` in `Breweries.csv` are the same data, but do not share a name. We remedy this by renaming the column in `Beers.csv`.
@@ -54,29 +56,182 @@ BrewPerState
 ```
 
 
-```{r}
-# Renamed Brewery_id to Brew_ID to satisfy merging requirement
-Beers <- rename(Beers, Brew_ID = Brewery_id)
-```
 ### 2. Merge beer data with the breweries data. Print the first 6 observations and the last six observations to check the merged file.
 
  We can now merge them into a single dataset, using `full_join`.
  
 ```{r}
-Brewdata <- full_join(Beers, Breweries, by="Brew_ID")
-```
+# Rename Brewery_id to Brew_ID to satisfy merging requirement
+Beers <- rename(Beers, Brew_ID = Brewery_id)
 
-```{r}
+# Merge tables
+Brewdata <- full_join(Beers, Breweries, by="Brew_ID")
+
 # Change variable names to more meaningful title
 Brewdata <- rename(Brewdata, Beer = Name.x, Brewery = Name.y, OZ = Ounces)
+
+#Convert OZ to factor
+Brewdata$OZ = as.factor(Brewdata$OZ)
 ```
 
 To retrieve the first and last six observations from the combined data, 
 we run `head` and `tail` on `Brewdata`, our combined dataset.
 ```{r}
+# quick:
+head(Brewdata)
+tail(Brewdata)
+# pretty:
 kable(Brewdata %>% head())
+kable(Brewdata %>% tail())
 ```
 
+
+### 3. Address the missing values in each column.
+
+-Remove 5 missing styles, 3/5 of these also have missing ABV and IBU values also. The ABV/IBU of the non-missings values aren't remarkable, so their removal shouldn't affect the overall data, but it's worth noting.
+-Impute 62 missing ABV and 1005 missing IBU values into BrewComplete (so we can compare vs Brewdata)
+-Based on visual inspection, it appears ABV is safe to impute, but IBU looks like it might be overreaching! (e.g. Cider Beer IBUs have no reference data for comparison)
+-We will exclude missing IBU beer data for comparisons on IBU in future tests
+
+
 ```{r}
-kable(Brewdata %>% tail())
+# Explore missing values:
+sum(is.na(Brewdata))
+summary(Brewdata)
+Brewdata %>% filter(is.na(Style))
+# Need to handle NA in ABV, IBU, Sytle
+
+# remove the 5 beers missing style (3 of them were missing ABV/IBU also)
+RemovedBrews <- Brewdata %>% filter(is.na(Style))
+Brewdata <- Brewdata %>% filter(!is.na(Style))
+
+# identify missing IBU/ABV values:
+Brewdata$ImputedABV <- ifelse(is.na(Brewdata$ABV),'Imputed','Original')
+Brewdata$ImputedIBU <- ifelse(is.na(Brewdata$IBU),'Imputed','Original')
+
+# impute missing ABV & IBU values:
+imp <- mice(Brewdata, seed=5)
+BrewComplete <- mice::complete(imp)
+sum(is.na(BrewComplete))
+summary(BrewComplete)
+
+# view imputed vs original plot comparison:
+BrewComplete %>% ggplot(aes(Style, ABV, color=ImputedABV)) + geom_point() + coord_flip()
+BrewComplete %>% ggplot(aes(Style, IBU, color=ImputedIBU)) + geom_point() + coord_flip()
+
+# assign imputed ABV values
+Brewdata$ABV <- BrewComplete$ABV
+
+# store IBU containing dataset for further examination 
+IBUdata <- Brewdata %>% filter(!is.na(IBU))
+
+```
+
+
+### 4. Compute the median alcohol content and international bitterness unit for each state. Plot a bar chart to compare.
+
+```{r}
+
+Brewdata %>% filter(!is.na(IBU & ABV)) %>% select(State, ABV,IBU) %>%
+  group_by(State) %>%
+  dplyr::summarize(Median_IBU=median(IBU), Median_ABV=median(ABV*100)) %>%
+  gather(`Median_IBU`, `Median_ABV`, key='Type', value='Measurement') %>%
+  ggplot(aes(State, Measurement, fill=Type)) +
+  geom_bar(stat='identity', position = 'Dodge') +
+  labs(y='ABV% and IBU', title = 'Median ABV and IBU by State')
+
+```
+
+### 5. Which state has the maximum alcoholic (ABV) beer? Which state has the most bitter (IBU) beer?
+
+```{r}
+TopABV <- top_n(Brewdata, 1, ABV)
+TopIBU <- top_n(Brewdata, 1, IBU)
+
+TopABV$State
+TopIBU$State
+```
+
+### 6. Comment on the summary statistics and distribution of the ABV variable.
+
+ABV of all measured beer falls into a range of .1% to 12.8% alcohol content by volume.  The data appears to be fairly normally distributed with a touch of right skewness, with a mean of 5.97%, a median of 5.60%, a standard deviation of 1.35% and an interquartile range of 1.7%.
+
+```{r}
+summary(Brewdata$ABV)
+sd(Brewdata$ABV)
+hist(Brewdata$ABV)
+
+```
+
+
+### 7. Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
+
+
+It appears that there is some correlation between bitterness and ABV. The data shows a trend that generally as bitterness increases, so does alcohol content.  However, alcohol content may increase with or without an increase in bitterness.
+
+Several of the highly bitter beers have considerably more alcohol in them than thier less bitter counterparts.
+```{r}
+IBUdata %>% ggplot(aes(ABV, IBU)) + geom_jitter()
+
+```
+
+
+### 8. Budweiser would also like to investigate the difference with respect to IBU and ABV between IPAs (India Pale Ales) and other types of Ale (any beer with “Ale” in its name other than IPA).  You decide to use KNN clustering to investigate this relationship.  Provide statistical evidence one way or the other. You can of course assume your audience is comfortable with percentages … KNN is very easy to understand.  
+
+```{r}
+# Setup the data:
+nonIPA <- cbind(IBUdata, type='nonIPA', stringsAsFactors=F) %>% filter(
+  (grepl('\\bale\\b', Style, ignore.case=T) | grepl('\\bale\\b', Beer, ignore.case=T)) & 
+    (!grepl('\\bIPA\\b', Style, ignore.case=T) & !grepl('\\bIPA\\b', Beer, ignore.case=T)))
+
+IPA <- cbind(IBUdata, type='IPA', stringsAsFactors=F) %>% filter(grepl('\\bIPA\\b', Style, ignore.case=T) | grepl('\\bIPA\\b', Beer, ignore.case=T))
+
+# Make sure no non-IPAs are also classified as an IPA:
+intersect(nonIPA, IPA)
+
+# Combine the IPA/nonIPA dataframes:
+Ales <- union(nonIPA, IPA)
+Ales$type <- as.factor(Ales$type)
+
+
+# Build & tune KNN model:
+set.seed(135)
+splitPerc = .7
+iterations = 250
+numks = 50 # diminishing returns after 30
+masterAcc = matrix(nrow = iterations, ncol = numks)
+  
+for(j in 1:iterations) {
+  accs = data.frame(accuracy = numeric(numks), k = numeric(numks))
+  trainIndices = sample(1:dim(Ales)[1],round(splitPerc * dim(Ales)[1]))
+  train = Ales[trainIndices,]
+  test = Ales[-trainIndices,]
+  for(i in 1:numks) {
+      classifications = knn(train[,c('IBU','ABV')],test[,c('IBU','ABV')],as.factor(train$type), prob = TRUE, k = i)
+      table(as.factor(test$type),classifications)
+      CM = confusionMatrix(table(as.factor(test$type),classifications))
+      masterAcc[j,i] = CM$overall[1]
+  }
+}
+
+MeanAcc = colMeans(masterAcc)
+plot(seq(1,numks,1),MeanAcc, type = "l")
+bestK <- which.max(MeanAcc)
+paste0("bestK: ",bestK,", Avg Accuracy: ",max(MeanAcc))
+# KNN = 5 is best w/ meanAcc = .866
+
+# Use KNN to predict Ale Type (nonIPA/IPA)
+classifications = knn(train[,c('IBU','ABV')],test[,c('IBU','ABV')],train$type, prob = TRUE, k = bestK)
+table(test$type,classifications)
+confusionMatrix(table(test$type,classifications))
+
+
+```
+
+
+### 9. Knock their socks off!  Find one other useful inference from the data that you feel Budweiser may be able to find value in.  You must convince them why it is important and back up your conviction with appropriate statistical evidence. 
+
+```{r}
+
+
 ```
