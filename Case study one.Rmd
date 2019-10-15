@@ -4,7 +4,7 @@ author: "Dusin Bracy and Tazeb Abera"
 date: "10/8/2019"
 output: html_document
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 # Case study 1(Case Study of US Craft Beer and Breweries)
@@ -56,7 +56,7 @@ BrewPerState
 ```
 
 
-### 2. Merge beer data with the breweries data. Print the first 6 observations and the last six observations to check the merged file.
+### 2a. Merge beer data with the breweries data. 
 
  We can now merge them into a single dataset, using `full_join`.
  
@@ -74,8 +74,11 @@ Brewdata <- rename(Brewdata, Beer = Name.x, Brewery = Name.y, OZ = Ounces)
 Brewdata$OZ = as.factor(Brewdata$OZ)
 ```
 
+### 2b. Print the first 6 observations and the last six observations to check the merged file.
+
 To retrieve the first and last six observations from the combined data, 
 we run `head` and `tail` on `Brewdata`, our combined dataset.
+
 ```{r}
 # quick:
 head(Brewdata)
@@ -87,21 +90,22 @@ kable(Brewdata %>% tail())
 
 
 ### 3. Address the missing values in each column.
-
--Remove 5 missing styles, 3/5 of these also have missing ABV and IBU values also. The ABV/IBU of the non-missings values aren't remarkable, so their removal shouldn't affect the overall data, but it's worth noting.
--Impute 62 missing ABV and 1005 missing IBU values into BrewComplete (so we can compare vs Brewdata)
+-To do this, we first use a function (which returns `true` if a given value is NA, `false` otherwise, using `is.na`) and `sapply` to determine the number of missing values for each column within `Brewdata`.
+-We then remove 5 observations with missing styles, 3/5 of these also have missing ABV and IBU values also. The ABV/IBU of the non-missings values aren't remarkable, so their removal shouldn't affect the overall data, but it is worth noting.
+-Explore imputation of 62 missing ABV and 1005 missing IBU values into BrewComplete (so we can compare vs Brewdata)
 -Based on visual inspection, it appears ABV is safe to impute, but IBU looks like it might be overreaching! (e.g. Cider Beer IBUs have no reference data for comparison)
 -We will exclude missing IBU beer data for comparisons on IBU in future tests
 
 
 ```{r}
-# Explore missing values:
-sum(is.na(Brewdata))
-summary(Brewdata)
-Brewdata %>% filter(is.na(Style))
+# Explore missing values with kable library to make document more presentable:
+MissingValues <- sapply(Brewdata, function(x)sum(is.na(x)))
+MissingValues %>% kable("html") %>% kable_styling()
+
 # Need to handle NA in ABV, IBU, Sytle
 
 # remove the 5 beers missing style (3 of them were missing ABV/IBU also)
+Brewdata %>% filter(is.na(Style))
 RemovedBrews <- Brewdata %>% filter(is.na(Style))
 Brewdata <- Brewdata %>% filter(!is.na(Style))
 
@@ -125,41 +129,70 @@ Brewdata$ABV <- BrewComplete$ABV
 # store IBU containing dataset for further examination 
 IBUdata <- Brewdata %>% filter(!is.na(IBU))
 
+
+
 ```
 
 
 ### 4. Compute the median alcohol content and international bitterness unit for each state. Plot a bar chart to compare.
 
 ```{r}
+# 4.a transform the data
+Firewater <- Brewdata %>% na.omit() %>% group_by(State) %>% summarise(Median = median(ABV)) %>% arrange(Median)
+Bitter <- Brewdata %>% 
+  na.omit() %>%
+  group_by(State) %>%
+  summarise(Median = median(IBU)) %>%
+  arrange(Median)
 
+# 4.b Plot a bar chart to compare ABV by state
+ggplot(data=Firewater, aes(x=State, y=Median)) +
+  geom_bar(stat="identity", fill="steelblue")+
+  theme_economist() + 
+  scale_color_economist()+
+  theme(axis.text.x=element_text(size=rel(0.8), angle=90)) +
+  ggtitle("Median ABV by State") +
+  labs(x="State",y="ABV")
+
+# 4.c Plot a bar chart to compare IBU by state
+ggplot(data=Bitter, aes(x=State, y=Median)) +
+  geom_bar(stat="identity", fill="steelblue")+
+  theme_economist() + 
+  scale_color_economist()+
+  theme(axis.text.x=element_text(size=rel(0.8), angle=90))+
+  ggtitle("Median IBU by State") +
+  labs(x="State",y="IBU")
+
+
+# Combined plot:
 Brewdata %>% filter(!is.na(IBU & ABV)) %>% select(State, ABV,IBU) %>%
   group_by(State) %>%
   dplyr::summarize(Median_IBU=median(IBU), Median_ABV=median(ABV*100)) %>%
   gather(`Median_IBU`, `Median_ABV`, key='Type', value='Measurement') %>%
   ggplot(aes(State, Measurement, fill=Type)) +
   geom_bar(stat='identity', position = 'Dodge') +
-  labs(y='ABV% and IBU', title = 'Median ABV and IBU by State')
+  labs(y='ABV% and IBU', title = 'Median ABV and IBU by State') +
+  theme_economist() + 
+  scale_color_economist() +
+  theme(axis.text.x=element_text(size=rel(0.8), angle=90))
+
 
 ```
 
 ### 5. Which state has the maximum alcoholic (ABV) beer? Which state has the most bitter (IBU) beer?
 
+We identify Colorado as having the beer with the highest ABV, at `.128`; and we identify Oregon has having the beer with the highest IBU, at `138`.
+
 ```{r}
 TopABV <- top_n(Brewdata, 1, ABV)
 TopIBU <- top_n(Brewdata, 1, IBU)
+kable(TopABV)
+kable(TopIBU)
 
-TopABV$State
-TopIBU$State
 ```
-
-```{r}
-kable(Brewdata[which.max(Brewdata$ABV),])
-```
-
-```{r}
-kable(Brewdata[which.max(Brewdata$IBU),])
-
 ### 6. Comment on the summary statistics and distribution of the ABV variable.
+
+We do this by calling `summary` on the `ABV` column in our `Brewdata` dataset.
 
 ABV of all measured beer falls into a range of .1% to 12.8% alcohol content by volume.  The data appears to be fairly normally distributed with a touch of right skewness, with a mean of 5.97%, a median of 5.60%, a standard deviation of 1.35% and an interquartile range of 1.7%.
 
@@ -170,28 +203,25 @@ hist(Brewdata$ABV)
 
 ```
 
-```{r}
-BeerSummary <- (summary(Brewdata$ABV))
-print(BeerSummary)
-
-
-hist(Brewdata$ABV)
-```
-
-
 
 ### 7. Is there an apparent relationship between the bitterness of the beer and its alcoholic content? Draw a scatter plot.  Make your best judgment of a relationship and EXPLAIN your answer.
 
+We utilize `ggplot` to plot a scatter plot of the data, using `IBU` and `ABV` as our variables.
+
+Examination of this scatter plot and the regression line suggests that there is a positive, linear relationship between `IBU` and `ABV`.
 
 It appears that there is some correlation between bitterness and ABV. The data shows a trend that generally as bitterness increases, so does alcohol content.  However, alcohol content may increase with or without an increase in bitterness.
 
 Several of the highly bitter beers have considerably more alcohol in them than thier less bitter counterparts.
 ```{r}
-IBUdata %>% ggplot(aes(ABV, IBU)) + geom_jitter()
 
-
-ggplot(Brewdata, aes(x=IBU, y= ABV)) + geom_point(shape=1) + geom_smooth(method=lm) + theme_economist() + 
-  scale_color_economist()+ theme(axis.text.x=element_text(size=rel(1.0)))+ ggtitle("Correlation between IBU and ABV ") + labs(x="IBU",y="ABV")
+ggplot(Brewdata, aes(x=IBU, y= ABV)) + 
+  geom_point(shape=1) + 
+  geom_smooth(method=lm) + 
+  theme_economist() + 
+  scale_color_economist() + 
+  theme(axis.text.x=element_text(size=rel(1.0))) +
+  labs(x="IBU",y="ABV", title="Correlation between IBU and ABV")
 
 ```
 
