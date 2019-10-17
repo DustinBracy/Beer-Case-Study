@@ -4,7 +4,7 @@ author: "Dusin Bracy and Tazeb Abera"
 date: "10/8/2019"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 # Case study 1(Case Study of US Craft Beer and Breweries)
@@ -33,6 +33,7 @@ library(kableExtra) # library to make the document more presentable
 library(mice) # optional to impute ABV & IBU values
 library(class)
 library(caret)
+library(usmap) 
 ```
 
 ```{r}
@@ -52,7 +53,7 @@ The field `Brewery_id` in `Beers.csv` and `Brew_ID` in `Breweries.csv` are the s
 We answer this question by retrieving the value of `State` from the `Breweries` data.
 ```{r}
 BrewPerState <-table(Breweries$State)
-BrewPerState
+kable(BrewPerState)
 ```
 
 
@@ -102,6 +103,38 @@ kable(Brewdata %>% tail())
 MissingValues <- sapply(Brewdata, function(x)sum(is.na(x)))
 MissingValues %>% kable("html") %>% kable_styling()
 
+
+Brewdata %>% ggplot(aes(IBU)) + geom_bar(stat='identity')
+
+# Missing values code borrowed from: https://jenslaufer.com/data/analysis/visualize_missing_values_with_ggplot.html
+
+missing.values <- Brewdata %>%
+  gather(key = "key", value = "val") %>%
+  mutate(isna = is.na(val)) %>%
+  group_by(key) %>%
+  mutate(total = n()) %>%
+  group_by(key, total, isna) %>%
+  summarise(num.isna = n()) %>%
+  mutate(pct = num.isna / total * 100)
+
+
+levels <- (missing.values  %>% 
+             filter(isna == T) %>% 
+             arrange(desc(pct)))$key
+
+percentage.plot <- missing.values %>%
+      ggplot() +
+        geom_bar(aes(x = reorder(key, desc(pct)), 
+                     y = pct, fill=isna), stat = 'identity', alpha=0.8) +
+      scale_x_discrete(limits = levels) +
+      scale_fill_manual(name = "", values = c('steelblue', 'tomato3'), 
+                        labels = c("Present", "Missing")) +
+      coord_flip() +
+      labs(title = "Percentage of missing values", x =
+             'Variable', y = "% of missing values")
+
+percentage.plot
+
 # Need to handle NA in ABV, IBU, Sytle
 
 # remove the 5 beers missing style (3 of them were missing ABV/IBU also)
@@ -115,6 +148,7 @@ Brewdata$ImputedIBU <- ifelse(is.na(Brewdata$IBU),'Imputed','Original')
 
 # impute missing ABV & IBU values:
 imp <- mice(Brewdata, seed=5)
+imp$pred [,'Beer_ID'] = 0
 BrewComplete <- mice::complete(imp)
 sum(is.na(BrewComplete))
 summary(BrewComplete)
@@ -130,11 +164,16 @@ Brewdata$ABV <- BrewComplete$ABV
 IBUdata <- Brewdata %>% filter(!is.na(IBU))
 
 
-
 ```
 
 
 ### 4. Compute the median alcohol content and international bitterness unit for each state. Plot a bar chart to compare.
+
+Arkansas and Utah are tied for lowest ABV at 4.0%
+Maine has highest ABV at 6.7%
+
+Wisconsin has the lowest IBU @ 19
+Maine has the highest IBU @ 61
 
 ```{r}
 # 4.a transform the data
@@ -189,6 +228,15 @@ TopIBU <- top_n(Brewdata, 1, IBU)
 kable(TopABV)
 kable(TopIBU)
 
+# Set up the map:
+df <- data.frame(abbr=c('CO','OR'),Top_Beer=c('ABV','IBU'))
+map <- left_join(statepop,df, by ='abbr')
+
+# Plot the map:
+plot_usmap(data = map, values = "Top_Beer") + 
+  labs(title = "Top States by ABV/IBU") +
+  scale_fill_discrete(name = "Category") 
+
 ```
 ### 6. Comment on the summary statistics and distribution of the ABV variable.
 
@@ -200,6 +248,18 @@ ABV of all measured beer falls into a range of .1% to 12.8% alcohol content by v
 summary(Brewdata$ABV)
 sd(Brewdata$ABV)
 hist(Brewdata$ABV)
+
+# Add a pretty histogram:
+Brewdata %>% ggplot(aes(ABV)) + 
+  geom_histogram(binwidth = .01, fill='steelblue', color='black') + 
+  theme_economist() + 
+  labs(y='Count of Beers', title='ABV Summary')
+
+# Add a pretty boxplot:
+Brewdata %>% ggplot(aes(OZ, ABV, )) + 
+  geom_boxplot(fill='steelblue', color='black') +   
+  theme_economist() +
+  labs(title='ABV distiribution by container size', x='Fluid Ounces')
 
 ```
 
@@ -222,6 +282,9 @@ ggplot(Brewdata, aes(x=IBU, y= ABV)) +
   scale_color_economist() + 
   theme(axis.text.x=element_text(size=rel(1.0))) +
   labs(x="IBU",y="ABV", title="Correlation between IBU and ABV")
+
+Brewdata %>% select(IBU, ABV) %>% filter(!is.na(IBU&ABV)) %>% cor()
+cor.test(Brewdata$IBU, Brewdata$ABV)
 
 ```
 
@@ -283,5 +346,5 @@ confusionMatrix(table(test$type,classifications))
 
 ```{r}
 
-
+install.packages('mice')
 ```
