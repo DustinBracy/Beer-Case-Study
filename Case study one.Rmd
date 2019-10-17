@@ -113,9 +113,6 @@ kable(Brewdata %>% tail())
 MissingValues <- sapply(Brewdata, function(x)sum(is.na(x)))
 MissingValues %>% kable("html") %>% kable_styling()
 
-
-Brewdata %>% ggplot(aes(IBU)) + geom_bar(stat='identity')
-
 # Missing values code borrowed from: https://jenslaufer.com/data/analysis/visualize_missing_values_with_ggplot.html
 
 missing.values <- Brewdata %>%
@@ -187,24 +184,24 @@ Maine has the highest IBU @ 61
 
 ```{r}
 # 4.a transform the data
-Firewater <- Brewdata %>% na.omit() %>% group_by(State) %>% summarise(Median = median(ABV)) %>% arrange(Median)
+Firewater <- Brewdata %>% na.omit() %>% group_by(state) %>% summarise(Median = median(ABV)) %>% arrange(Median)
 Bitter <- Brewdata %>% 
   na.omit() %>%
-  group_by(State) %>%
+  group_by(state) %>%
   summarise(Median = median(IBU)) %>%
   arrange(Median)
 
 # 4.b Plot a bar chart to compare ABV by state
-ggplot(data=Firewater, aes(x=State, y=Median)) +
+ggplot(data=Firewater, aes(x=state, y=Median)) +
   geom_bar(stat="identity", fill="steelblue")+
   theme_economist() + 
   scale_color_economist()+
   theme(axis.text.x=element_text(size=rel(0.8), angle=90)) +
   ggtitle("Median ABV by State") +
-  labs(x="State",y="ABV")
+  labs(x="state",y="ABV")
 
 # 4.c Plot a bar chart to compare IBU by state
-ggplot(data=Bitter, aes(x=State, y=Median)) +
+ggplot(data=Bitter, aes(x=state, y=Median)) +
   geom_bar(stat="identity", fill="steelblue")+
   theme_economist() + 
   scale_color_economist()+
@@ -214,11 +211,11 @@ ggplot(data=Bitter, aes(x=State, y=Median)) +
 
 
 # Combined plot:
-Brewdata %>% filter(!is.na(IBU & ABV)) %>% select(State, ABV,IBU) %>%
-  group_by(State) %>%
+Brewdata %>% filter(!is.na(IBU & ABV)) %>% select(state, ABV,IBU) %>%
+  group_by(state) %>%
   dplyr::summarize(Median_IBU=median(IBU), Median_ABV=median(ABV*100)) %>%
   gather(`Median_IBU`, `Median_ABV`, key='Type', value='Measurement') %>%
-  ggplot(aes(State, Measurement, fill=Type)) +
+  ggplot(aes(state, Measurement, fill=Type)) +
   geom_bar(stat='identity', position = 'Dodge') +
   labs(y='ABV% and IBU', title = 'Median ABV and IBU by State') +
   theme_economist() + 
