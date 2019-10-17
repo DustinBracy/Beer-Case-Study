@@ -4,7 +4,7 @@ author: "Dusin Bracy and Tazeb Abera"
 date: "10/8/2019"
 output: html_document
 editor_options: 
-  chunk_output_type: console
+  chunk_output_type: inline
 ---
 
 # Case study 1(Case Study of US Craft Beer and Breweries)
@@ -54,6 +54,16 @@ We answer this question by retrieving the value of `State` from the `Breweries` 
 ```{r}
 BrewPerState <-table(Breweries$State)
 kable(BrewPerState)
+
+# Set up the map:
+Breweries <- rename(Breweries, state = State)
+map <- Breweries %>% group_by(state) %>% summarise(Breweries = n())
+
+# Plot Brewery heatmap:
+plot_usmap(data=map, values = "Breweries", labels=F) + 
+  labs(title = "Breweries per State") +
+  scale_fill_continuous(name = "Breweries") 
+
 ```
 
 
