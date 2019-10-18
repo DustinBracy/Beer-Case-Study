@@ -161,7 +161,7 @@ sum(is.na(BrewComplete))
 summary(BrewComplete)
 
 # view imputed vs original plot comparison:
-BrewComplete %>% ggplot(aes(Style, ABV, color=ImputedABV)) + geom_point() + coord_flip()
+BrewComplete %>% ggplot(aes(Style, ABV, color=ImputedABV)) + geom_point() + coord_flip() 
 BrewComplete %>% ggplot(aes(Style, IBU, color=ImputedIBU)) + geom_point() + coord_flip()
 
 # assign imputed ABV values
@@ -220,6 +220,7 @@ Brewdata %>% filter(!is.na(IBU & ABV)) %>% select(state, ABV,IBU) %>%
   labs(y='ABV% and IBU', title = 'Median ABV and IBU by State') +
   theme_economist() + 
   scale_color_economist() +
+  scale_fill_manual(name = "", values = c('tomato3','steelblue'), labels = c("ABV %", "IBU")) +
   theme(axis.text.x=element_text(size=rel(0.8), angle=90))
 
 
@@ -353,5 +354,9 @@ confusionMatrix(table(test$type,classifications))
 
 ```{r}
 
-install.packages('mice')
+unique(Brewdata$Style)
+
+Styles <- c('IPA','Porter','Stout','Lager','Pilsner','Red', 'Wheat','Amber','Blonde','Brown','Cider','Ale')
+Styles = str_c("\\b",Styles,"\\b")
+
 ```
