@@ -57,6 +57,7 @@ Breweries <- read_csv('./data/Breweries.csv', col_types = cols())
 
 ### 1. How many breweries are present in each state?
 We can answer this question by counting the number of values of each `State` from the `Breweries` dataset.
+
 ```{r}
 # Format for output:
 BPS <- data.frame(table(Breweries$State))
