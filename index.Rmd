@@ -4,7 +4,7 @@ author: "Dusin Bracy and Tazeb Abera"
 date: "10/8/2019"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -50,8 +50,6 @@ map <- Breweries %>% group_by(state) %>% summarise(Breweries = n())
 plot_usmap(data=map, values = "Breweries", labels=F) + 
   labs(title = "Breweries per State") +
   scale_fill_continuous(name = "Breweries") 
-
-ggsave('./plots/breweryHeatmap.png')
 
 ```
 
@@ -122,7 +120,6 @@ percentage.plot <- missing.values %>%
              'Columns with missing data', y = "Percentage of missing values")
 
 percentage.plot
-ggsave('./plots/missingValues.png')
 ```
 
 
@@ -157,11 +154,9 @@ summary(BrewComplete)
 ```{r}
 # view imputed vs original plot ABV:
 BrewComplete %>% ggplot(aes(Style, ABV, color=ImputedABV)) + geom_point() + coord_flip()
-ggsave('./plots/imputedABV.png')
 
 # view imputed vs original plot IBU:
 BrewComplete %>% ggplot(aes(Style, IBU, color=ImputedIBU)) + geom_point() + coord_flip()
-ggsave('./plots/imputedIBU.png')
 
 # assign imputed ABV values
 Brewdata$ABV <- BrewComplete$ABV
@@ -200,7 +195,6 @@ ggplot(data=Firewater, aes(x=state, y=Median)) +
   theme(axis.text.x=element_text(size=rel(0.8), angle=90)) +
   ggtitle("Median ABV by State") +
   labs(x="state",y="ABV")
-ggsave('./plots/ABVbyState.png')
 
 # 4.c Plot a bar chart to compare IBU by state
 ggplot(data=Bitter, aes(x=state, y=Median)) +
@@ -210,8 +204,6 @@ ggplot(data=Bitter, aes(x=state, y=Median)) +
   theme(axis.text.x=element_text(size=rel(0.8), angle=90))+
   ggtitle("Median IBU by State") +
   labs(x="State",y="IBU")
-ggsave('./plots/IBUbyState.png')
-
 
 # Combined plot:
 Brewdata %>% filter(!is.na(IBU & ABV)) %>% select(state, ABV,IBU) %>%
@@ -225,7 +217,6 @@ Brewdata %>% filter(!is.na(IBU & ABV)) %>% select(state, ABV,IBU) %>%
   scale_fill_manual(name = "", values = c('tomato3','steelblue'), labels = c("ABV %", "IBU")) +
   scale_color_economist() +
   theme(axis.text.x=element_text(size=rel(0.8), angle=90))
-ggsave('./plots/ABVandIBUbyState.png')
 
 
 ```
@@ -250,7 +241,7 @@ plot_usmap(data = map, values = "Top_Beer") +
   scale_discrete_manual(labels(remove)) +
   scale_fill_manual(name = "Category", values=c(ABV='tomato3',IBU='steelblue'), na.value='darkgrey') +
   theme(legend.background = element_rect(fill = "#D5E4EB"), plot.background = element_rect(fill = "#D5E4EB"))
-ggsave('./plots/TopBeerByState.png')
+
 
 ```
 
@@ -269,7 +260,6 @@ Brewdata %>% ggplot(aes(ABV)) +
   geom_histogram(binwidth = .01, fill='steelblue', color='black') + 
   theme_economist() + 
   labs(y='Count of Beers', title='ABV Summary')
-ggsave('./plots/ABVhistogram.png')
 
 
 ```
@@ -291,7 +281,6 @@ Brewdata %>% ggplot(aes(OZ, ABV, )) +
   geom_boxplot(fill='steelblue', color='black') +   
   theme_economist() +
   labs(title='ABV distiribution by container size', x='Fluid Ounces')
-ggsave('./plots/ABVboxplot.png')
 
 ```
 
@@ -314,7 +303,6 @@ ggplot(Brewdata, aes(x=IBU, y= ABV)) +
   scale_color_economist() + 
   theme(axis.text.x=element_text(size=rel(1.0))) +
   labs(x="IBU",y="ABV", title="Correlation between IBU and ABV")
-ggsave('./plots/ABV_IBUcorrelation.png')
 
 cor.test(Brewdata$IBU, Brewdata$ABV)
 
