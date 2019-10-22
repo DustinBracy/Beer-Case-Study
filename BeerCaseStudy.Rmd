@@ -199,11 +199,7 @@ Maine has the highest IBU @ 61
 ```{r}
 # 4.a transform the data
 Firewater <- Brewdata %>% na.omit() %>% group_by(state) %>% summarise(Median = median(ABV)) %>% arrange(Median)
-Bitter <- Brewdata %>% 
-  na.omit() %>%
-  group_by(state) %>%
-  summarise(Median = median(IBU)) %>%
-  arrange(Median)
+Bitter <- Brewdata %>% na.omit() %>% group_by(state) %>% summarise(Median = median(IBU)) %>%  arrange(Median)
 
 # 4.b Plot a bar chart to compare ABV by state
 ggplot(data=Firewater, aes(x=state, y=Median)) +
@@ -226,7 +222,7 @@ ggplot(data=Bitter, aes(x=state, y=Median)) +
 ggsave('./plots/IBUbyState.png')
 
 
-# Combined plot:
+# Combined plot merging 4b and 4c:
 Brewdata %>% filter(!is.na(IBU & ABV)) %>% select(state, ABV,IBU) %>%
   group_by(state) %>%
   dplyr::summarize(Median_IBU=median(IBU), Median_ABV=median(ABV*100)) %>%
@@ -258,11 +254,8 @@ df <- data.frame(abbr=c('CO','OR'),Top_Beer=c('ABV','IBU'))
 map <- left_join(statepop,df, by ='abbr')
 
 # Plot the map:
-plot_usmap(data = map, values = "Top_Beer") + 
-  labs(x='',y='',title = "Top States by ABV/IBU") +
-  scale_discrete_manual(labels(remove)) +
-  scale_fill_manual(name = "Category", values=c(ABV='tomato3',IBU='steelblue'), na.value='darkgrey') +
-  theme(legend.background = element_rect(fill = "#D5E4EB"), plot.background = element_rect(fill = "#D5E4EB"))
+plot_usmap(data = map, values = "Top_Beer") + labs(x='',y='',title = "Top States by ABV/IBU") +
+  scale_discrete_manual(labels(remove)) + scale_fill_manual(name = "Category", values=c(ABV='tomato3',IBU='steelblue'), na.value='darkgrey') + theme(legend.background = element_rect(fill = "#D5E4EB"), plot.background = element_rect(fill = "#D5E4EB"))
 ggsave('./plots/TopBeerByState.png')
 
 ```
@@ -302,8 +295,7 @@ ABV of all measured beer falls into a range of .1% to 12.8% alcohol content by v
 # Plot the boxplot:
 Brewdata %>% ggplot(aes(OZ, ABV, )) + 
   geom_boxplot(fill='steelblue', color='black') +   
-  theme_economist() +
-  labs(title='ABV distiribution by container size', x='Fluid Ounces')
+  theme_economist() + labs(title='ABV distiribution by container size', x='Fluid Ounces')
 ggsave('./plots/ABVboxplot.png')
 
 ```
