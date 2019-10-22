@@ -121,14 +121,10 @@ MissingValues %>% kable("html") %>% kable_styling()
 
 # Missing values code borrowed from: https://jenslaufer.com/data/analysis/visualize_missing_values_with_ggplot.html
 
-missing.values <- Brewdata %>%
-  gather(key = "key", value = "val") %>%
-  mutate(isna = is.na(val)) %>%
-  group_by(key) %>%
-  mutate(total = n()) %>%
-  group_by(key, total, isna) %>%
-  summarise(num.isna = n()) %>%
-  mutate(pct = num.isna / total * 100)
+missing.values <- Brewdata %>%   gather(key = "key", value = "val") %>%
+  mutate(isna = is.na(val)) %>%   group_by(key) %>%
+  mutate(total = n()) %>%   group_by(key, total, isna) %>%
+  summarise(num.isna = n()) %>%   mutate(pct = num.isna / total * 100)
 
 
 levels <- (missing.values  %>% 
