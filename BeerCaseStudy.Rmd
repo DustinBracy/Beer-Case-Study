@@ -16,8 +16,11 @@ This case study explore datasets for various `beers` and the `breweries` that pr
 The initial data provided were in two separate datasets, one each for beers and the other breweries. The dataset combined into a single dataset using Full join.
 
 ### Repository Structure
+
 Our Git repository {https://github.com/tazeb6531/Project_one/blob/master/BeerCaseStudy.Rproj}
 * [`README.md`] (https://github.com/tazeb6531/Project_one/blob/5e31e35a8798af6ba81e920a4ef5b81f75bf51a2/Readme.md): This is the base page for the repository, containing an introduction as well as our codebook for how we coded variable names throughout the datasets.
+
+* [`BeerCaseStudy.Rmd`](https://github.com/tazeb6531/Project_one/blob/master/BeerCaseStudy.Rmd) : This is the primary file for the analysis, and is the file we are currently reading. It contains all the relevant R code, graphics, and analysis for the project; also included are specific .docx, .html, and .pdf knitted versions of this file.
 
 ### Reproduction of Analysis
 
