@@ -23,9 +23,11 @@ Our Git repository {https://github.com/tazeb6531/Project_one/blob/master/BeerCas
 * [`BeerCaseStudy.Rmd`](https://github.com/tazeb6531/Project_one/blob/master/BeerCaseStudy.Rmd) : This is the primary file for the analysis, and is the file we are currently reading. It contains all the relevant R code, graphics, and analysis for the project; also included are specific .docx, .html, and .pdf knitted versions of this file.
 
 * [`Beers.csv`](https://github.com/tazeb6531/Project_one/blob/master/Beers.csv) and [`Breweries.csv`](https://github.com/tazeb6531/Project_one/blob/master/Breweries.csv), were provided and are the original datasets from which our merged dataset is produced.
+
 ### Reproduction of Analysis
 
-## Analysis
+`README.md` is the suggested place to start. It is also the possible method to downlaod this repository.
+
 
 We begin by setting `knitr` options,
 
