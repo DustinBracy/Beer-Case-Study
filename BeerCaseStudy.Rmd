@@ -408,4 +408,61 @@ unique(Brewdata$Style)
 Styles <- c('IPA','Porter','Stout','Lager','Pilsner','Red', 'Wheat','Amber','Blonde','Brown','Cider','Ale')
 Styles = str_c("\\b",Styles,"\\b")
 
+Styles <- mice(Brewdata [c('IPA','Porter','Stout','Lager','Pilsner','Red','Wheat','Amber',
+                           'Blonde','Brown','Cider','Ale')], m=5,maxit=50,meth='pmm',seed=100)
+
+Brewdata.impute <- mice(Brewdata [,c("Beer_ID","ABV","IBU")],m=5,maxit=50,meth='pmm',seed=100)
+#summary(Brewdata.impute)
+Brewdata.impute$imp$ABV #check the imputed data ABV
+Brewdata.impute$imp$IBU # check the imputed data IBU
+Brewdata.impute.draft <- complete(Brewdata.impute,1)  # Complete impute dataset
+
 ```
+
+# Average ABV and IBU by Region {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
+## Average ABV by Region {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
+``` {r}
+#glimpse(brew.beerABVper)
+#view(brew.beerABVper)
+bbABVper.clean <- BrewdataABVper %>% filter(!is.na(brew.beerABVper$ABVper))
+#bbABVper.clean
+bbABVper.cleanmea <- aggregate(bbABVper.clean$ABVper, by=list(bbABVper.clean$Region), FUN = mean)
+colnames(bbABVper.cleanmea) <- c("Region", "MeanABV")
+bbABVper.cleanmea$MeanABV <- round(bbABVper.cleanmea$MeanABV, 2)
+#bbABVper.cleanmea
+```
+
+{r}
+hchart(bbABVper.cleanmea, "column", hcaes(x = Region, y = MeanABV)) %>% 
+  hc_title(text = "Average ABV by Region") %>%
+  hc_add_theme(hc_theme_google())
+
+
+## Average IBU by Region {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
+{r}
+#glimpse(brew.beerABVper)
+#view(brew.beerABVper)
+bbIBU.clean <- brew.beerABVper %>% filter(!is.na(brew.beerABVper$IBU))
+#bbIBU.clean
+bbIBU.cleanmed <- aggregate(bbIBU.clean$IBU, by=list(bbIBU.clean$Region), FUN = median)
+colnames(bbIBU.cleanmed) <- c("Region", "MedianIBU")
+#bbIBU.cleanmed
+#bbIBU.clean
+bbIBU.cleanmea <- aggregate(bbIBU.clean$IBU, by=list(bbIBU.clean$Region), FUN = mean)
+colnames(bbIBU.cleanmea) <- c("Region", "MeanIBU")
+#bbIBU.cleanmea
+
+
+{r}
+hchart(bbIBU.cleanmed, "column", hcaes(x = Region, y = MedianIBU)) %>% 
+  hc_title(text = "Median IBU by Region") %>%
+  hc_add_theme(hc_theme_google())
+
+
+
+
+
+
+
+
+
