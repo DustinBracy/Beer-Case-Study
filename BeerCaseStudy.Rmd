@@ -341,9 +341,17 @@ Brewdata.impute <- mice(Brewdata [,c("Beer_ID","ABV","IBU")],m=5,maxit=50,meth='
 #summary(Brewdata.impute)
 Brewdata.impute$imp$ABV #check the imputed data ABV
 Brewdata.impute$imp$IBU # check the imputed data IBU
-Brewdata.draft <- complete(Brewdata.impute,1)  # Complete impute dataset
+Brewdata.impute.draft <- complete(Brewdata.impute,1)  # Complete impute dataset
 
 ```
+
+``` {r Create new dataset after imputing the missing data}
+Brewdata.impute.draft <- Brewdata.impute.draft %>% dplyr::rename(ABV.New = ABV)
+Brewdata.impute.draft <- Brewdata.impute.draft %>% dplyr::rename(IBU.New = IBU)
+Brewdata.New <- full_join(Brewdata, Brewdata.impute.draft, by = "Beer_ID")
+```
+
+
 
 
 ```{r, include=F}
