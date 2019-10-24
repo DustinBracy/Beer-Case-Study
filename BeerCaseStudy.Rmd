@@ -387,68 +387,14 @@ for(j in 1:iterations) {
 MeanAcc = colMeans(masterAcc)
 plot(seq(1,numks,1),MeanAcc, type = "l")
 k <- which.max(MeanAcc)
+```
+
+``` {r}
 
 
 ```
 
 
-
-
-```{r, include=F}
-# Setup the data:
-nonIPA <- cbind(IBUdata, type='nonIPA', stringsAsFactors=F) %>% filter(
-  (grepl('\\bale\\b', Style, ignore.case=T) | grepl('\\bale\\b', Beer, ignore.case=T)) & 
-    (!grepl('\\bIPA\\b', Style, ignore.case=T) & !grepl('\\bIPA\\b', Beer, ignore.case=T)))
-
-IPA <- cbind(IBUdata, type='IPA', stringsAsFactors=F) %>% filter(grepl('\\bIPA\\b', Style, ignore.case=T) | grepl('\\bIPA\\b', Beer, ignore.case=T))
-
-# Make sure no non-IPAs are also classified as an IPA:
-intersect(nonIPA, IPA)
-# Combine the IPA/nonIPA dataframes:
-Ales <- union(nonIPA, IPA)
-Ales$type <- as.factor(Ales$type)
-
-
-# Build & tune KNN model:
-set.seed(135)
-splitPerc = .7
-iterations = 250 #comment out iterations to save time building .rmd 
-numks = 50 # diminishing returns after 30
-masterAcc = matrix(nrow = iterations, ncol = numks)
-  
-for(j in 1:iterations) {
-  accs = data.frame(accuracy = numeric(numks), k = numeric(numks))
-  trainIndices = sample(1:dim(Ales)[1],round(splitPerc * dim(Ales)[1]))
-  train = Ales[trainIndices,]
-  test = Ales[-trainIndices,]
-  for(i in 1:numks) {
-      classifications = knn(train[,c('IBU','ABV')],test[,c('IBU','ABV')],as.factor(train$type), prob = TRUE, k = i)
-      table(as.factor(test$type),classifications)
-      CM = confusionMatrix(table(as.factor(test$type),classifications))
-      masterAcc[j,i] = CM$overall[1]
-  }
-}
-
-```
-
-Find the mean accuracy and plot the best level of K for KNN:
-
-```{r}
-MeanAcc = colMeans(masterAcc)
-plot(seq(1,numks,1),MeanAcc, type = "l")
-bestK <- which.max(MeanAcc)
-paste0("bestK: ",bestK,", Avg Accuracy: ",max(MeanAcc))
-# KNN = 5 is best w/ meanAcc = .866
-
-# Use KNN to predict Ale Type (nonIPA/IPA)
-classifications = knn(train[,c('IBU','ABV')],test[,c('IBU','ABV')],train$type, prob = TRUE, k = bestK)
-confusionMatrix(table(test$type,classifications))
-```
-
-Because our KNN classification algorithm may vary slightly by chance, approximate performance statistics are shown below:
- * Accuracy: 87%
- * Sensitivity/Recall (prediction of IPAs): 84%
- * Specificity/Precision (prediction of nonIPAs): 89%
 
  
 
