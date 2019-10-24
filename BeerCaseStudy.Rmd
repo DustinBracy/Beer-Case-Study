@@ -359,6 +359,40 @@ IPA.Ales$type <- as.factor(IPA.Ales$type)
 
 ```
 
+``` {r KNN model}
+
+set.seed(100)
+splitPerc = .7
+iterations = 100
+numks =100 
+masterAcc = matrix(nrow = iterations, ncol = numks)
+
+for(j in 1:iterations) {
+  
+  accs = data.frame(accuracy = numeric(numks), k = numeric(numks))
+  trainIndices = sample(1:dim(IPA.Ales)[1],round(splitPerc * dim(IPA.Ales)[1]))
+  train = IPA.Ales[trainIndices,]
+  test = IPA.Ales[-trainIndices,]
+  
+  for(i in 1:numks) {
+    
+    classifications = knn(train[,c('IBU.New','ABV.New')],test[,c('IBU.New','ABV.New')],as.factor(train$type), prob = TRUE, k = i)
+    
+    table(as.factor(test$type),classifications)
+    CM = confusionMatrix(table(as.factor(test$type),classifications))
+    masterAcc[j,i] = CM$overall[1]
+  }
+}
+
+MeanAcc = colMeans(masterAcc)
+plot(seq(1,numks,1),MeanAcc, type = "l")
+k <- which.max(MeanAcc)
+
+
+```
+
+
+
 
 ```{r, include=F}
 # Setup the data:
