@@ -351,7 +351,13 @@ Brewdata.impute.draft <- Brewdata.impute.draft %>% dplyr::rename(IBU.New = IBU)
 Brewdata.New <- full_join(Brewdata, Brewdata.impute.draft, by = "Beer_ID")
 ```
 
+```{r Create 2 dataframes  - IPA and Ales and regroup them.}
+Ales.beer <- cbind(Brewdata.New, type='Ales', stringsAsFactors=F) %>% filter(grepl('\\bale\\b', Style, ignore.case=T))
+IPA.beer <- cbind(Brewdata.New, type='IPA', stringsAsFactors=F) %>% filter(grepl('\\bIPA\\b', Style, ignore.case=T))
+IPA.Ales <- union(Ales.beer, IPA.beer)
+IPA.Ales$type <- as.factor(IPA.Ales$type) 
 
+```
 
 
 ```{r, include=F}
