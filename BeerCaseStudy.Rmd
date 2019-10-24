@@ -336,6 +336,16 @@ There is sufficient evidence (p-value <.0001) that the alcohol by volume (ABV) a
 
 ### 8. Investigate the difference with respect to IBU and ABV between IPAs (India Pale Ales) and other types of Ale (any beer with “Ale” in its name other than IPA).  We will use KNN to classify each 'ale' as either an IPA or Other and provide statistical evidence to back up this claim.
 
+``` {r  Imputing the missing data}
+Brewdata.impute <- mice(Brewdata [,c("Beer_ID","ABV","IBU")],m=5,maxit=50,meth='pmm',seed=100)
+#summary(Brewdata.impute)
+Brewdata.impute$imp$ABV #check the imputed data ABV
+Brewdata.impute$imp$IBU # check the imputed data IBU
+Brewdata.draft <- complete(Brewdata.impute,1)  # Complete impute dataset
+
+```
+
+
 ```{r, include=F}
 # Setup the data:
 nonIPA <- cbind(IBUdata, type='nonIPA', stringsAsFactors=F) %>% filter(
