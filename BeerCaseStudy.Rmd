@@ -402,29 +402,86 @@ confusionMatrix(table(test$type,classifications))
 
 ### 9. Additional Research.
 
-```{r}
-unique(Brewdata$Style)
 
-Styles <- c('IPA','Porter','Stout','Lager','Pilsner','Red', 'Wheat','Amber','Blonde','Brown','Cider','Ale')
-Styles = str_c("\\b",Styles,"\\b")
+```{r Create data sets for reference in this file}
+breweries <- read.csv("https://raw.githubusercontent.com/BivinSadler/MDS-6306-Doing-Data-Science-Fall-2019/master/Unit%208%20and%209%20Case%20Study%201/Breweries.csv", header = TRUE, strip.white=TRUE)
+beers <- read.csv("https://raw.githubusercontent.com/BivinSadler/MDS-6306-Doing-Data-Science-Fall-2019/master/Unit%208%20and%209%20Case%20Study%201/Beers.csv", header = TRUE)
+#str(beers)
+#glimpse(beers)
+beers <-  beers %>% dplyr::rename( Brew_ID = Brewery_id)
+#glimpse(beers)
+breweries <- breweries %>% dplyr::rename(Name_Brew = Name)  
+beers <- beers %>% dplyr::rename(Name_Beer = Name)
+#glimpse(breweries)
+#glimpse(beers)
+brew.beer <- full_join(breweries, beers, by = "Brew_ID")
+#view(brew.beer)
+#brew.beer
+brew.beerABVper <- mutate(brew.beer, ABVper = ABV * 100)
+#glimpse(brew.beerABVper)
+```
 
-Styles <- mice(Brewdata [c('IPA','Porter','Stout','Lager','Pilsner','Red','Wheat','Amber',
-                           'Blonde','Brown','Cider','Ale')], m=5,maxit=50,meth='pmm',seed=100)
-
-Brewdata.impute <- mice(Brewdata [,c("Beer_ID","ABV","IBU")],m=5,maxit=50,meth='pmm',seed=100)
-#summary(Brewdata.impute)
-Brewdata.impute$imp$ABV #check the imputed data ABV
-Brewdata.impute$imp$IBU # check the imputed data IBU
-Brewdata.impute.draft <- complete(Brewdata.impute,1)  # Complete impute dataset
-
+```{r Creating Regional Data Column based on State}
+#glimpse(brew.beerABVper)
+brew.beerABVper$Region[brew.beerABVper$State == "ME"] <- "Northeast"
+brew.beerABVper$Region[brew.beerABVper$State == "NH"] <- "Northeast"
+brew.beerABVper$Region[brew.beerABVper$State == "VT"] <- "Northeast"
+brew.beerABVper$Region[brew.beerABVper$State == "MA"] <- "Northeast"
+brew.beerABVper$Region[brew.beerABVper$State == "RI"] <- "Northeast"
+brew.beerABVper$Region[brew.beerABVper$State == "CT"] <- "Northeast"
+brew.beerABVper$Region[brew.beerABVper$State == "NY"] <- "Northeast"
+brew.beerABVper$Region[brew.beerABVper$State == "NJ"] <- "Northeast"
+brew.beerABVper$Region[brew.beerABVper$State == "PA"] <- "Northeast"
+brew.beerABVper$Region[brew.beerABVper$State == "ND"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "SD"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "NE"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "KS"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "MN"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "IA"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "MO"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "WI"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "IL"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "IN"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "MI"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "OH"] <- "Midwest"
+brew.beerABVper$Region[brew.beerABVper$State == "OK"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "TX"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "AR"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "LA"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "MS"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "KY"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "TN"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "AL"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "FL"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "GA"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "SC"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "NC"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "VA"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "WV"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "MD"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "DE"] <- "South"
+brew.beerABVper$Region[brew.beerABVper$State == "WA"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "OR"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "CA"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "AK"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "HI"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "AZ"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "NV"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "ID"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "MT"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "WY"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "CO"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "NM"] <- "West"
+brew.beerABVper$Region[brew.beerABVper$State == "UT"] <- "West"
+#glimpse(brew.beerABVper)
 ```
 
 # Average ABV and IBU by Region {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
 ## Average ABV by Region {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
-``` {r}
+```{r}
 #glimpse(brew.beerABVper)
 #view(brew.beerABVper)
-bbABVper.clean <- BrewdataABVper %>% filter(!is.na(brew.beerABVper$ABVper))
+bbABVper.clean <- brew.beerABVper %>% filter(!is.na(brew.beerABVper$ABVper))
 #bbABVper.clean
 bbABVper.cleanmea <- aggregate(bbABVper.clean$ABVper, by=list(bbABVper.clean$Region), FUN = mean)
 colnames(bbABVper.cleanmea) <- c("Region", "MeanABV")
@@ -432,14 +489,14 @@ bbABVper.cleanmea$MeanABV <- round(bbABVper.cleanmea$MeanABV, 2)
 #bbABVper.cleanmea
 ```
 
-{r}
+```{r}
 hchart(bbABVper.cleanmea, "column", hcaes(x = Region, y = MeanABV)) %>% 
   hc_title(text = "Average ABV by Region") %>%
   hc_add_theme(hc_theme_google())
-
+```
 
 ## Average IBU by Region {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
-{r}
+```{r}
 #glimpse(brew.beerABVper)
 #view(brew.beerABVper)
 bbIBU.clean <- brew.beerABVper %>% filter(!is.na(brew.beerABVper$IBU))
@@ -451,13 +508,13 @@ colnames(bbIBU.cleanmed) <- c("Region", "MedianIBU")
 bbIBU.cleanmea <- aggregate(bbIBU.clean$IBU, by=list(bbIBU.clean$Region), FUN = mean)
 colnames(bbIBU.cleanmea) <- c("Region", "MeanIBU")
 #bbIBU.cleanmea
+```
 
-
-{r}
+```{r}
 hchart(bbIBU.cleanmed, "column", hcaes(x = Region, y = MedianIBU)) %>% 
   hc_title(text = "Median IBU by Region") %>%
   hc_add_theme(hc_theme_google())
-
+```
 
 
 
