@@ -1,15 +1,15 @@
 ---
-title: "Beer: A 'Case'Study"
-author: "Dusin Bracy and Tazeb Abera"
+title: "Beer: A 'Case' Study"
+author: "Dustin Bracy and Tazeb Abera"
 date: "10/8/2019"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
-# Case study 1(Case Study of US Craft Beer and Breweries)
+## A Case Study of US Craft Beer and Breweries
 
-## Introduction and Overview
+### Introduction and Overview
 
 This case study explore datasets for various `beers` and the `breweries` that produce them in the US. The steps and procedures taken for this analysis are detailed below. 
 
@@ -34,6 +34,7 @@ We begin by setting `knitr` options,
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 options(knitr.kable.NA = '', knitr.kable.booktabs=T)
+
 library(tidyverse) # auto includes ggplot2, readr, deplyr,tidyr etc
 library(ggthemes) # for themes in ggplot
 library(kableExtra) # library to make the document more presentable
@@ -41,6 +42,18 @@ library(mice) # optional to impute ABV & IBU values
 library(class)
 library(caret)
 library(usmap) 
+library(highcharter)
+library(magrittr)
+library(ggmap)
+library(ggExtra)
+library(treemapify)
+library(maps)
+library(naniar)
+library(revealjs)
+library(htmltools)
+library(viridisLite)
+library(treemap)
+library(RColorBrewer)
 ```
 
 
@@ -76,7 +89,6 @@ plot_usmap(data=map, values = "Breweries", labels=F) +
   labs(title = "Breweries per State") +
   scale_fill_continuous(name = "Breweries") 
 
-ggsave('./plots/breweryHeatmap.png')
 
 ```
 
@@ -135,7 +147,6 @@ percentage.plot <- missing.values %>% ggplot() + geom_bar(aes(x = reorder(key, d
   coord_flip() + labs(title = "Percentage of missing values", x = 'Columns with missing data', y = "Percentage of missing values")
 
 percentage.plot
-ggsave('./plots/missingValues.png')
 ```
 
 
@@ -170,11 +181,9 @@ summary(BrewComplete)
 ```{r}
 # view imputed vs original plot ABV:
 BrewComplete %>% ggplot(aes(Style, ABV, color=ImputedABV)) + geom_point() + coord_flip()
-ggsave('./plots/imputedABV.png')
 
 # view imputed vs original plot IBU:
 BrewComplete %>% ggplot(aes(Style, IBU, color=ImputedIBU)) + geom_point() + coord_flip()
-ggsave('./plots/imputedIBU.png')
 
 # assign imputed ABV values
 Brewdata$ABV <- BrewComplete$ABV
@@ -209,7 +218,6 @@ ggplot(data=Firewater, aes(x=state, y=Median)) +
   theme(axis.text.x=element_text(size=rel(0.8), angle=90)) +
   ggtitle("Median ABV by State") +
   labs(x="state",y="ABV")
-ggsave('./plots/ABVbyState.png')
 
 # 4.c Plot a bar chart to compare IBU by state
 ggplot(data=Bitter, aes(x=state, y=Median)) +
@@ -219,7 +227,6 @@ ggplot(data=Bitter, aes(x=state, y=Median)) +
   theme(axis.text.x=element_text(size=rel(0.8), angle=90))+
   ggtitle("Median IBU by State") +
   labs(x="State",y="IBU")
-ggsave('./plots/IBUbyState.png')
 
 
 # Combined plot merging 4b and 4c:
@@ -234,8 +241,6 @@ Brewdata %>% filter(!is.na(IBU & ABV)) %>% select(state, ABV,IBU) %>%
   scale_fill_manual(name = "", values = c('tomato3','steelblue'), labels = c("ABV %", "IBU")) +
   scale_color_economist() +
   theme(axis.text.x=element_text(size=rel(0.8), angle=90))
-ggsave('./plots/ABVandIBUbyState.png')
-
 
 ```
 
@@ -256,7 +261,6 @@ map <- left_join(statepop,df, by ='abbr')
 # Plot the map:
 plot_usmap(data = map, values = "Top_Beer") + labs(x='',y='',title = "Top States by ABV/IBU") +
   scale_discrete_manual(labels(remove)) + scale_fill_manual(name = "Category", values=c(ABV='tomato3',IBU='steelblue'), na.value='darkgrey') + theme(legend.background = element_rect(fill = "#D5E4EB"), plot.background = element_rect(fill = "#D5E4EB"))
-ggsave('./plots/TopBeerByState.png')
 
 ```
 
@@ -275,7 +279,6 @@ Brewdata %>% ggplot(aes(ABV)) +
   geom_histogram(binwidth = .01, fill='steelblue', color='black') + 
   theme_economist() + 
   labs(y='Count of Beers', title='ABV Summary')
-ggsave('./plots/ABVhistogram.png')
 
 
 ```
@@ -296,7 +299,6 @@ ABV of all measured beer falls into a range of .1% to 12.8% alcohol content by v
 Brewdata %>% ggplot(aes(OZ, ABV, )) + 
   geom_boxplot(fill='steelblue', color='black') +   
   theme_economist() + labs(title='ABV distiribution by container size', x='Fluid Ounces')
-ggsave('./plots/ABVboxplot.png')
 
 ```
 
@@ -319,7 +321,6 @@ ggplot(Brewdata, aes(x=IBU, y= ABV)) +
   scale_color_economist() + 
   theme(axis.text.x=element_text(size=rel(1.0))) +
   labs(x="IBU",y="ABV", title="Correlation between IBU and ABV")
-ggsave('./plots/ABV_IBUcorrelation.png')
 
 cor.test(Brewdata$IBU, Brewdata$ABV)
 
@@ -336,7 +337,7 @@ There is sufficient evidence (p-value <.0001) that the alcohol by volume (ABV) a
 
 ### 8. Investigate the difference with respect to IBU and ABV between IPAs (India Pale Ales) and other types of Ale (any beer with “Ale” in its name other than IPA).  We will use KNN to classify each 'ale' as either an IPA or Other and provide statistical evidence to back up this claim.
 
-``` {r  Imputing the missing data}
+``` {r  Imputing the missing data, echo=FALSE}
 Brewdata.impute <- mice(Brewdata [,c("Beer_ID","ABV","IBU")],m=5,maxit=50,meth='pmm',seed=100)
 #summary(Brewdata.impute)
 Brewdata.impute$imp$ABV #check the imputed data ABV
@@ -473,6 +474,7 @@ brew.beerABVper$Region[brew.beerABVper$State == "WY"] <- "West"
 brew.beerABVper$Region[brew.beerABVper$State == "CO"] <- "West"
 brew.beerABVper$Region[brew.beerABVper$State == "NM"] <- "West"
 brew.beerABVper$Region[brew.beerABVper$State == "UT"] <- "West"
+
 #glimpse(brew.beerABVper)
 ```
 
@@ -492,7 +494,7 @@ bbABVper.cleanmea$MeanABV <- round(bbABVper.cleanmea$MeanABV, 2)
 ```{r}
 hchart(bbABVper.cleanmea, "column", hcaes(x = Region, y = MeanABV)) %>% 
   hc_title(text = "Average ABV by Region") %>%
-  hc_add_theme(hc_theme_google())
+  hc_add_theme(hc_theme_economist())
 ```
 
 ## Average IBU by Region {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
@@ -513,10 +515,31 @@ colnames(bbIBU.cleanmea) <- c("Region", "MeanIBU")
 ```{r}
 hchart(bbIBU.cleanmed, "column", hcaes(x = Region, y = MedianIBU)) %>% 
   hc_title(text = "Median IBU by Region") %>%
-  hc_add_theme(hc_theme_google())
+  hc_add_theme(hc_theme_economist())
 ```
 
 
+```{r new section}
+
+TopCities <- Brewdata %>% mutate(City = paste0(City, ', ', state)) %>% group_by(City) %>% 
+  summarise(Beers = n()) %>% arrange(desc(Beers))
+Top10Cities <- top_n(TopCities,10)
+
+hchart(Top10Cities, "column", hcaes(x = City, y = Beers)) %>% 
+  hc_title(text = "Top 10 Cities with Most Breweries") %>%
+  hc_add_theme(hc_theme_economist())
+
+TopBreweries <- Brewdata %>% mutate(Brewery = paste0(Brewery,'<br>', City, ', ', state)) %>% 
+  group_by(Brewery) %>% summarise(Beers = n()) %>% arrange(desc(Beers))
+Top10Breweries <- top_n(TopBreweries,10)
+
+
+hchart(Top10Breweries, "column", hcaes(x = Brewery, y = Beers)) %>% 
+  hc_title(text = "Top 10 Breweries with Most Original Beers") %>%
+  hc_add_theme(hc_theme_economist())
+
+
+```
 
 
 
