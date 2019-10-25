@@ -1,15 +1,15 @@
 ---
-title: "Beer: A 'Case'Study"
-author: "Dusin Bracy and Tazeb Abera"
+title: "Beer: A 'Case' Study"
+author: "Dustin Bracy and Tazeb Abera"
 date: "10/8/2019"
 output: html_document
 editor_options: 
   chunk_output_type: console
 ---
 
-# Case study 1(Case Study of US Craft Beer and Breweries)
+## A Case Study of US Craft Beer and Breweries
 
-## Introduction and Overview
+### Introduction and Overview
 
 This case study explore datasets for various `beers` and the `breweries` that produce them in the US. The steps and procedures taken for this analysis are detailed below. 
 
@@ -34,6 +34,7 @@ We begin by setting `knitr` options,
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 options(knitr.kable.NA = '', knitr.kable.booktabs=T)
+
 library(tidyverse) # auto includes ggplot2, readr, deplyr,tidyr etc
 library(ggthemes) # for themes in ggplot
 library(kableExtra) # library to make the document more presentable
@@ -42,6 +43,7 @@ library(class)
 library(caret)
 library(usmap) 
 library(highcharter)
+library(magrittr)
 library(ggmap)
 library(ggExtra)
 library(treemapify)
@@ -492,7 +494,7 @@ bbABVper.cleanmea$MeanABV <- round(bbABVper.cleanmea$MeanABV, 2)
 ```{r}
 hchart(bbABVper.cleanmea, "column", hcaes(x = Region, y = MeanABV)) %>% 
   hc_title(text = "Average ABV by Region") %>%
-  hc_add_theme(hc_theme_google())
+  hc_add_theme(hc_theme_economist())
 ```
 
 ## Average IBU by Region {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
@@ -513,10 +515,31 @@ colnames(bbIBU.cleanmea) <- c("Region", "MeanIBU")
 ```{r}
 hchart(bbIBU.cleanmed, "column", hcaes(x = Region, y = MedianIBU)) %>% 
   hc_title(text = "Median IBU by Region") %>%
-  hc_add_theme(hc_theme_google())
+  hc_add_theme(hc_theme_economist())
 ```
 
 
+```{r new section}
+
+TopCities <- Brewdata %>% mutate(City = paste0(City, ', ', state)) %>% group_by(City) %>% 
+  summarise(Beers = n()) %>% arrange(desc(Beers))
+Top10Cities <- top_n(TopCities,10)
+
+hchart(Top10Cities, "column", hcaes(x = City, y = Beers)) %>% 
+  hc_title(text = "Top 10 Cities with Most Breweries") %>%
+  hc_add_theme(hc_theme_economist())
+
+TopBreweries <- Brewdata %>% mutate(Brewery = paste0(Brewery,'<br>', City, ', ', state)) %>% 
+  group_by(Brewery) %>% summarise(Beers = n()) %>% arrange(desc(Beers))
+Top10Breweries <- top_n(TopBreweries,10)
+
+
+hchart(Top10Breweries, "column", hcaes(x = Brewery, y = Beers)) %>% 
+  hc_title(text = "Top 10 Breweries with Most Original Beers") %>%
+  hc_add_theme(hc_theme_economist())
+
+
+```
 
 
 
