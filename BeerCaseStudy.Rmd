@@ -1,7 +1,7 @@
 ---
 title: "Beer: A 'Case' Study"
 author: "Dustin Bracy and Tazeb Abera"
-date: "10/8/2019"
+date: "10/26/2019"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -11,14 +11,15 @@ editor_options:
 
 ### Introduction and Overview
 
-This case study explore datasets for various `beers` and the `breweries` that produce them in the US. The steps and procedures taken for this analysis are detailed below. 
+This case study explores datasets for various `beers` and `breweries` where they are produced in the US. The steps and procedures taken for this analysis are detailed below. 
 
 The initial data provided were in two separate datasets, one each for beers and the other breweries. The dataset combined into a single dataset using Full join.
 
 ### Repository Structure
 
-Our Git repository {https://github.com/tazeb6531/Project_one/blob/master/BeerCaseStudy.Rproj}
-* [`README.md`] (https://github.com/tazeb6531/Project_one/blob/5e31e35a8798af6ba81e920a4ef5b81f75bf51a2/Readme.md): This is the base page for the repository, containing an introduction as well as our codebook for how we coded variable names throughout the datasets.
+For Repository files, please see our [`Github`](https://github.com/tazeb6531/Project_one/blob/master/BeerCaseStudy.Rproj}  
+
+* [`ReadMe.md`](https://github.com/tazeb6531/Project_one/blob/master/Readme.md): This is the base page for the repository, containing an introduction as well as our codebook for how we coded variable names throughout the datasets.
 
 * [`BeerCaseStudy.Rmd`](https://github.com/tazeb6531/Project_one/blob/master/BeerCaseStudy.Rmd) : This is the primary file for the analysis, and is the file we are currently reading. It contains all the relevant R code, graphics, and analysis for the project; also included are specific .docx, .html, and .pdf knitted versions of this file.
 
@@ -31,7 +32,7 @@ Our Git repository {https://github.com/tazeb6531/Project_one/blob/master/BeerCas
 
 We begin by setting `knitr` options,
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, echo=T}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE)
 options(knitr.kable.NA = '', knitr.kable.booktabs=T)
 
@@ -166,7 +167,7 @@ Brewdata$ImputedABV <- ifelse(is.na(Brewdata$ABV),'Imputed','Original')
 Brewdata$ImputedIBU <- ifelse(is.na(Brewdata$IBU),'Imputed','Original')
 ```
 
-Now that we've marked the missing values, we can explore imputation of 62 missing ABV and 1005 missing IBU values into BrewComplete (so we can compare vs Brewdata)
+Now that we've marked the missing values, we can explore imputation of 62 missing ABV and 1005 missing IBU values into BrewComplete (so we can compare vs Brewdata).
 
 ```{r, include =F}
 # impute missing ABV & IBU values:
@@ -179,11 +180,14 @@ summary(BrewComplete)
 ```
 
 ```{r}
-# view imputed vs original plot ABV:
-BrewComplete %>% ggplot(aes(Style, ABV, color=ImputedABV)) + geom_point() + coord_flip()
+# view random sample of imputed vs original plot ABV:
+set.seed(10)
+StyleSample <- sample(unique(BrewComplete$Style), size=15)
 
-# view imputed vs original plot IBU:
-BrewComplete %>% ggplot(aes(Style, IBU, color=ImputedIBU)) + geom_point() + coord_flip()
+BrewComplete %>% filter(Style %in% StyleSample) %>% ggplot(aes(x=ABV, y=reorder(Style,ABV), color=ImputedABV)) + geom_point() + labs(y = 'Style')
+
+# view random sample of imputed vs original plot IBU:
+BrewComplete %>% filter(Style %in% StyleSample) %>% ggplot(aes(x=IBU, y=reorder(Style,IBU), color=ImputedIBU)) + geom_point() + labs(y = 'Style')
 
 # assign imputed ABV values
 Brewdata$ABV <- BrewComplete$ABV
@@ -337,7 +341,7 @@ There is sufficient evidence (p-value <.0001) that the alcohol by volume (ABV) a
 
 ### 8. Investigate the difference with respect to IBU and ABV between IPAs (India Pale Ales) and other types of Ale (any beer with “Ale” in its name other than IPA).  We will use KNN to classify each 'ale' as either an IPA or Other and provide statistical evidence to back up this claim.
 
-``` {r  Imputing the missing data, echo=FALSE}
+``` {r  Imputing the missing data, echo=T, include=F}
 Brewdata.impute <- mice(Brewdata [,c("Beer_ID","ABV","IBU")],m=5,maxit=50,meth='pmm',seed=100)
 #summary(Brewdata.impute)
 Brewdata.impute$imp$ABV #check the imputed data ABV
@@ -364,8 +368,8 @@ IPA.Ales$type <- as.factor(IPA.Ales$type)
 
 set.seed(100)
 splitPerc = .7
-iterations = 100
-numks =100 
+iterations = 1#00
+numks =1#00 
 masterAcc = matrix(nrow = iterations, ncol = numks)
 
 for(j in 1:iterations) {
@@ -405,25 +409,18 @@ confusionMatrix(table(test$type,classifications))
 
 
 ```{r Create data sets for reference in this file}
-breweries <- read.csv("https://raw.githubusercontent.com/BivinSadler/MDS-6306-Doing-Data-Science-Fall-2019/master/Unit%208%20and%209%20Case%20Study%201/Breweries.csv", header = TRUE, strip.white=TRUE)
-beers <- read.csv("https://raw.githubusercontent.com/BivinSadler/MDS-6306-Doing-Data-Science-Fall-2019/master/Unit%208%20and%209%20Case%20Study%201/Beers.csv", header = TRUE)
-#str(beers)
-#glimpse(beers)
+# Reset Datafiles:
+breweries <- read.csv("./data/Breweries.csv", header = TRUE, strip.white=TRUE)
+beers <- read.csv("./data/Beers.csv", header = TRUE)
 beers <-  beers %>% dplyr::rename( Brew_ID = Brewery_id)
-#glimpse(beers)
 breweries <- breweries %>% dplyr::rename(Name_Brew = Name)  
 beers <- beers %>% dplyr::rename(Name_Beer = Name)
-#glimpse(breweries)
-#glimpse(beers)
 brew.beer <- full_join(breweries, beers, by = "Brew_ID")
-#view(brew.beer)
-#brew.beer
 brew.beerABVper <- mutate(brew.beer, ABVper = ABV * 100)
-#glimpse(brew.beerABVper)
 ```
 
-```{r Creating Regional Data Column based on State}
-#glimpse(brew.beerABVper)
+```{r Create Regional Data Column based on State}
+# Build regional info:
 brew.beerABVper$Region[brew.beerABVper$State == "ME"] <- "Northeast"
 brew.beerABVper$Region[brew.beerABVper$State == "NH"] <- "Northeast"
 brew.beerABVper$Region[brew.beerABVper$State == "VT"] <- "Northeast"
@@ -474,70 +471,67 @@ brew.beerABVper$Region[brew.beerABVper$State == "WY"] <- "West"
 brew.beerABVper$Region[brew.beerABVper$State == "CO"] <- "West"
 brew.beerABVper$Region[brew.beerABVper$State == "NM"] <- "West"
 brew.beerABVper$Region[brew.beerABVper$State == "UT"] <- "West"
-
-#glimpse(brew.beerABVper)
 ```
 
-# Average ABV and IBU by Region {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
-## Average ABV by Region {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
+#### Compare Region, City and Brewery Stats {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
+
 ```{r}
-#glimpse(brew.beerABVper)
-#view(brew.beerABVper)
+# Calculate mean ABV by Region
 bbABVper.clean <- brew.beerABVper %>% filter(!is.na(brew.beerABVper$ABVper))
-#bbABVper.clean
 bbABVper.cleanmea <- aggregate(bbABVper.clean$ABVper, by=list(bbABVper.clean$Region), FUN = mean)
 colnames(bbABVper.cleanmea) <- c("Region", "MeanABV")
 bbABVper.cleanmea$MeanABV <- round(bbABVper.cleanmea$MeanABV, 2)
-#bbABVper.cleanmea
+
+# Calculate mean IBU by Region
+bbIBU.clean <- brew.beerABVper %>% filter(!is.na(brew.beerABVper$IBU))
+bbIBU.cleanmed <- aggregate(bbIBU.clean$IBU, by=list(bbIBU.clean$Region), FUN = median)
+colnames(bbIBU.cleanmed) <- c("Region", "MedianIBU")
+bbIBU.cleanmea <- aggregate(bbIBU.clean$IBU, by=list(bbIBU.clean$Region), FUN = mean)
+colnames(bbIBU.cleanmea) <- c("Region", "MeanIBU")
+
+# Calculate Top 10 Cities with the most Breweries
+TopCities <- Brewdata %>% mutate(City = paste0(City, ', ', state)) %>% group_by(City) %>% 
+  summarise(Breweries = n()) %>% arrange(desc(Breweries))
+
+# Calculate Top 10 Breweries with the most original beers
+TopBreweries <- Brewdata %>% mutate(Brewery = paste0(Brewery,'<br>', City, ', ', state)) %>% 
+  group_by(Brewery) %>% summarise(Beers = n()) %>% arrange(desc(Beers))
+
+Top10Cities <- top_n(TopCities,10)
+Top10Breweries <- top_n(TopBreweries,10)
 ```
 
-```{r}
+#### Build the plots
+```{r section 9 build plots}
+
+charts <- list()
+charts[['zero']] <- ''
+
+charts[['meanABVbyRegion']] <-
 hchart(bbABVper.cleanmea, "column", hcaes(x = Region, y = MeanABV)) %>% 
   hc_title(text = "Average ABV by Region") %>%
   hc_add_theme(hc_theme_economist())
-```
 
-## Average IBU by Region {data-background="https://i.ibb.co/M6Yh3pg/In-Bev-Background.png"}
-```{r}
-#glimpse(brew.beerABVper)
-#view(brew.beerABVper)
-bbIBU.clean <- brew.beerABVper %>% filter(!is.na(brew.beerABVper$IBU))
-#bbIBU.clean
-bbIBU.cleanmed <- aggregate(bbIBU.clean$IBU, by=list(bbIBU.clean$Region), FUN = median)
-colnames(bbIBU.cleanmed) <- c("Region", "MedianIBU")
-#bbIBU.cleanmed
-#bbIBU.clean
-bbIBU.cleanmea <- aggregate(bbIBU.clean$IBU, by=list(bbIBU.clean$Region), FUN = mean)
-colnames(bbIBU.cleanmea) <- c("Region", "MeanIBU")
-#bbIBU.cleanmea
-```
-
-```{r}
+charts[['MedianIBUbyRegion']] <-
 hchart(bbIBU.cleanmed, "column", hcaes(x = Region, y = MedianIBU)) %>% 
   hc_title(text = "Median IBU by Region") %>%
   hc_add_theme(hc_theme_economist())
-```
 
-
-```{r new section}
-
-TopCities <- Brewdata %>% mutate(City = paste0(City, ', ', state)) %>% group_by(City) %>% 
-  summarise(Beers = n()) %>% arrange(desc(Beers))
-Top10Cities <- top_n(TopCities,10)
-
-hchart(Top10Cities, "column", hcaes(x = City, y = Beers)) %>% 
+charts[['top10byCity']] <-
+hchart(Top10Cities, "column", hcaes(x = City, y = Breweries)) %>% 
   hc_title(text = "Top 10 Cities with Most Breweries") %>%
   hc_add_theme(hc_theme_economist())
 
-TopBreweries <- Brewdata %>% mutate(Brewery = paste0(Brewery,'<br>', City, ', ', state)) %>% 
-  group_by(Brewery) %>% summarise(Beers = n()) %>% arrange(desc(Beers))
-Top10Breweries <- top_n(TopBreweries,10)
-
-
+charts[['top10byBrewery']] <-
 hchart(Top10Breweries, "column", hcaes(x = Brewery, y = Beers)) %>% 
   hc_title(text = "Top 10 Breweries with Most Original Beers") %>%
   hc_add_theme(hc_theme_economist())
 
+```
+
+### Visualization of our additional research!
+```{r section 9 display plots}
+htmltools::tagList(charts)
 
 ```
 
