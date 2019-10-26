@@ -368,8 +368,8 @@ IPA.Ales$type <- as.factor(IPA.Ales$type)
 
 set.seed(100)
 splitPerc = .7
-iterations = 1#00
-numks =1#00 
+iterations = 100
+numks =50
 masterAcc = matrix(nrow = iterations, ncol = numks)
 
 for(j in 1:iterations) {
